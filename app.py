@@ -197,6 +197,10 @@ def terms():
 @app.route("/api/camera/start", methods=["POST"])
 @login_req
 def start_camera():
+    global extractor
+    if extractor is None:
+        from pipeline.landmark_extractor import LandmarkExtractor
+        extractor = None
     global camera_active, session_words, session_start, extractor
     if extractor is None:
         extractor = LandmarkExtractor()
