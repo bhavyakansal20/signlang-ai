@@ -12,3 +12,4 @@ static/audio/
 .DS_Store
 venv/
 .venv/
+model/signlang_model.pt
