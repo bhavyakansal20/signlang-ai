@@ -1,0 +1,251 @@
+{% extends "base.html" %}
+{% block title %}SignLang AI — Real-time Indian Sign Language Recognition{% endblock %}
+{% block content %}
+
+<!-- ── Hero ──────────────────────────────────────────────────── -->
+<section class="hero">
+  <!-- Decorative wireframe hand -->
+  <svg class="hero-hand-bg" viewBox="0 0 300 400" fill="none"
+       stroke="rgba(240,130,15,1)" stroke-width="0.8">
+    <path d="M150 350 C100 350 60 310 60 260 L60 160 C60 148 70 140 80 140 C90 140 100 148 100 160 L100 200"/>
+    <path d="M100 160 L100 100 C100 88 110 80 120 80 C130 80 140 88 140 100 L140 180"/>
+    <path d="M140 100 L140 80 C140 68 150 60 160 60 C170 60 180 68 180 80 L180 180"/>
+    <path d="M180 80 L180 100 C180 88 190 80 200 80 C210 80 220 88 220 100 L220 200"/>
+    <path d="M220 140 C230 140 240 148 240 160 L240 260 C240 310 200 350 150 350"/>
+    <circle cx="80" cy="130" r="8"/>
+    <circle cx="120" cy="70" r="8"/>
+    <circle cx="160" cy="50" r="8"/>
+    <circle cx="200" cy="70" r="8"/>
+    <circle cx="240" cy="150" r="8"/>
+  </svg>
+
+  <!-- Floating badges -->
+  <div class="demo-badge demo-badge-1">
+    <div class="badge-icon">🤙</div>
+    <div>
+      <div style="font-weight:700;color:var(--fire-lt)">99.9% accuracy</div>
+      <div style="font-size:0.72rem;color:var(--bone-55)">42,000+ training samples</div>
+    </div>
+  </div>
+  <div class="demo-badge demo-badge-2">
+    <div class="badge-icon">🎙️</div>
+    <div>
+      <div style="font-weight:700;color:var(--jade)">Bilingual voice</div>
+      <div style="font-size:0.72rem;color:var(--bone-55)">English + Hindi TTS</div>
+    </div>
+  </div>
+
+  <div class="hero-eyebrow">
+    <div class="eyebrow-live">
+      <div class="eyebrow-dot"></div>
+      <span style="color:var(--jade)">LIVE</span>
+    </div>
+    Indian Sign Language · ISL · Real-time AI
+  </div>
+
+  <h1 class="hero-title">
+    Every hand<br/>has <i>a voice.</i>
+  </h1>
+
+  <p class="hero-sub">
+    SignLang AI translates Indian Sign Language into text and bilingual speech,
+    in real-time through your webcam. No special hardware. No downloads. Just show your hand.
+  </p>
+
+  <div class="hero-cta">
+    {% if logged_in %}
+      <a href="{{ url_for('dashboard') }}" class="btn btn-fire btn-lg">
+        Open Dashboard →
+      </a>
+      <a href="{{ url_for('history') }}" class="btn btn-ghost btn-lg">View Sessions</a>
+    {% else %}
+      <a href="{{ url_for('signup') }}" class="btn btn-fire btn-lg">
+        Start for Free →
+      </a>
+      <a href="{{ url_for('signin') }}" class="btn btn-ghost btn-lg">Sign In</a>
+    {% endif %}
+  </div>
+
+  <div class="hero-stats">
+    <div class="h-stat">
+      <span class="h-stat-num">7Cr+</span>
+      <span class="h-stat-label">Potential users</span>
+    </div>
+    <div class="h-stat">
+      <span class="h-stat-num">99.9%</span>
+      <span class="h-stat-label">Model accuracy</span>
+    </div>
+    <div class="h-stat">
+      <span class="h-stat-num">30 FPS</span>
+      <span class="h-stat-label">Real-time</span>
+    </div>
+    <div class="h-stat">
+      <span class="h-stat-num">2-Hand</span>
+      <span class="h-stat-label">Detection</span>
+    </div>
+    <div class="h-stat">
+      <span class="h-stat-num">EN+HI</span>
+      <span class="h-stat-label">Bilingual</span>
+    </div>
+  </div>
+</section>
+
+<!-- ── Features ───────────────────────────────────────────────── -->
+<section class="features" id="features">
+  <div class="section-header">
+    <span class="section-eyebrow">Capabilities</span>
+    <h2 class="section-title">Built for <i>real</i> accessibility</h2>
+    <p class="section-sub">
+      Every feature is designed to remove communication barriers for India's
+      deaf and hard-of-hearing community.
+    </p>
+  </div>
+
+  <div class="feat-grid">
+
+    <div class="feat-card">
+      <div class="feat-icon fi-f">
+        <svg viewBox="0 0 24 24" fill="none" stroke-width="1.5" stroke-linecap="round"><path d="M18 11V6a2 2 0 00-2-2 2 2 0 00-2 2M14 10V4a2 2 0 00-2-2 2 2 0 00-2 2v2M10 10.5V6a2 2 0 00-2-2 2 2 0 00-2 2v8M18 8a2 2 0 114 0v6a8 8 0 01-8 8H9a8 8 0 01-8-8v-1a2 2 0 114 0"/></svg>
+      </div>
+      <h3>Two-hand detection</h3>
+      <p>MediaPipe tracks both hands simultaneously — both skeletons render on the video overlay. The dominant hand drives the AI prediction, capturing the full range of ISL gestures.</p>
+      <span class="feat-num">01</span>
+    </div>
+
+    <div class="feat-card">
+      <div class="feat-icon fi-j">
+        <svg viewBox="0 0 24 24" fill="none" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 3H5a2 2 0 00-2 2v4m6-6h10a2 2 0 012 2v4M9 3v18m0 0h10a2 2 0 002-2V9M9 21H5a2 2 0 01-2-2V9m0 0h18"/></svg>
+      </div>
+      <h3>99.9% LSTM model</h3>
+      <p>A 3-layer PyTorch LSTM trained on 42,000+ landmark sequences across 35 ISL classes. Majority-vote buffer smooths predictions for stable, flicker-free output.</p>
+      <span class="feat-num">02</span>
+    </div>
+
+    <div class="feat-card">
+      <div class="feat-icon fi-f">
+        <svg viewBox="0 0 24 24" fill="none" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"/></svg>
+      </div>
+      <h3>Bilingual TTS</h3>
+      <p>Every recognized word and full sentences are spoken aloud via gTTS — in both English and Hindi. Toggle languages on the fly from the dashboard.</p>
+      <span class="feat-num">03</span>
+    </div>
+
+    <div class="feat-card wide">
+      <div class="feat-icon fi-j">
+        <svg viewBox="0 0 24 24" fill="none" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+      </div>
+      <h3>NLP sentence polishing</h3>
+      <p>Raw signs are automatically stitched into grammatically clean sentences. Number words convert to digits, consecutive duplicates are removed, and sentences are properly capitalised and punctuated — all in real-time.</p>
+      <span class="feat-num">04</span>
+    </div>
+
+    <div class="feat-card">
+      <div class="feat-icon fi-v">
+        <svg viewBox="0 0 24 24" fill="none" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 5h12M9 3v2m1.048 9.5A18.022 18.022 0 016.412 9m6.088 9h7M11 21l5-10 5 10M12.751 5C11.783 10.77 8.07 15.61 3 18.129"/></svg>
+      </div>
+      <h3>Hindi translation</h3>
+      <p>One click translates the full recognized sentence into Hindi, displayed inline on the dashboard and speakable via voice output.</p>
+      <span class="feat-num">05</span>
+    </div>
+
+    <div class="feat-card">
+      <div class="feat-icon fi-r">
+        <svg viewBox="0 0 24 24" fill="none" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
+      </div>
+      <h3>Confidence sparkline</h3>
+      <p>A live chart plots prediction confidence over time so you can see detection quality at a glance and adjust your hand position for optimal accuracy.</p>
+      <span class="feat-num">06</span>
+    </div>
+
+    <div class="feat-card">
+      <div class="feat-icon fi-f">
+        <svg viewBox="0 0 24 24" fill="none" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>
+      </div>
+      <h3>Sign dictionary</h3>
+      <p>Browse all 35 supported ISL signs in a slide-up reference drawer, organized alphabetically — letters A–Z and numbers 1–9. Perfect for learning while using.</p>
+      <span class="feat-num">07</span>
+    </div>
+
+    <div class="feat-card">
+      <div class="feat-icon fi-j">
+        <svg viewBox="0 0 24 24" fill="none" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>
+      </div>
+      <h3>Copy &amp; share</h3>
+      <p>Copy the full recognized sentence to clipboard in one click, share session results, and download professional PDF reports with word logs and timestamps.</p>
+      <span class="feat-num">08</span>
+    </div>
+
+    <div class="feat-card">
+      <div class="feat-icon fi-v">
+        <svg viewBox="0 0 24 24" fill="none" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"/></svg>
+      </div>
+      <h3>Keyboard shortcuts</h3>
+      <p>Space to start/stop, C to clear, H to toggle Hindi, D for dictionary, ? for the shortcuts overlay — full keyboard accessibility built in.</p>
+      <span class="feat-num">09</span>
+    </div>
+
+  </div>
+</section>
+
+<!-- ── Pipeline ────────────────────────────────────────────────── -->
+<section class="pipeline" id="how">
+  <div class="inner">
+    <div class="section-header">
+      <span class="section-eyebrow">The Pipeline</span>
+      <h2 class="section-title">How it works</h2>
+    </div>
+
+    <div class="steps-track">
+      <div class="step">
+        <div class="step-orb">
+          <span class="step-n">01</span>
+          <svg viewBox="0 0 24 24" fill="none" stroke-width="1.5" stroke-linecap="round"><path d="M15 10l4.553-2.069A1 1 0 0121 8.87v6.26a1 1 0 01-1.447.9L15 14M3 8a2 2 0 012-2h10a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2V8z"/></svg>
+        </div>
+        <h4>Webcam capture</h4>
+        <p>OpenCV streams 30 FPS from your camera. Works on any laptop or phone with a front camera.</p>
+      </div>
+      <div class="step">
+        <div class="step-orb">
+          <span class="step-n">02</span>
+          <svg viewBox="0 0 24 24" fill="none" stroke-width="1.5" stroke-linecap="round"><circle cx="12" cy="12" r="3"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2"/></svg>
+        </div>
+        <h4>Landmark extraction</h4>
+        <p>MediaPipe detects 21 3D key-points per hand across both hands simultaneously at real-time speed.</p>
+      </div>
+      <div class="step">
+        <div class="step-orb">
+          <span class="step-n">03</span>
+          <svg viewBox="0 0 24 24" fill="none" stroke-width="1.5" stroke-linecap="round"><path d="M9 3H5a2 2 0 00-2 2v4m6-6h10a2 2 0 012 2v4M9 3v18m0 0h10a2 2 0 002-2V9M9 21H5a2 2 0 01-2-2V9m0 0h18"/></svg>
+        </div>
+        <h4>LSTM classification</h4>
+        <p>A 30-frame landmark sequence is classified by a 3-layer LSTM achieving 99.9% validation accuracy.</p>
+      </div>
+      <div class="step">
+        <div class="step-orb">
+          <span class="step-n">04</span>
+          <svg viewBox="0 0 24 24" fill="none" stroke-width="1.5" stroke-linecap="round"><path d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"/></svg>
+        </div>
+        <h4>NLP + Voice output</h4>
+        <p>Signs are polished into sentences with NLP, displayed on screen, and spoken in English or Hindi.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── CTA ─────────────────────────────────────────────────────── -->
+<section class="cta">
+  <div class="cta-wrap">
+    <h2>Start translating sign language <i>today.</i></h2>
+    <p>
+      Free account. No downloads. No hardware.
+      Just open your camera and start signing.
+    </p>
+    {% if logged_in %}
+    <a href="{{ url_for('dashboard') }}" class="btn btn-fire btn-lg">Go to Dashboard →</a>
+    {% else %}
+    <a href="{{ url_for('signup') }}" class="btn btn-fire btn-lg">Create Free Account →</a>
+    {% endif %}
+  </div>
+</section>
+
+{% endblock %}

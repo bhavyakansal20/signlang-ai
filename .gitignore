@@ -1,0 +1,14 @@
+__pycache__/
+*.pyc
+*.pyo
+.env
+credentials.json
+*.pt
+data/raw/
+data/landmarks/
+model/plots/
+static/audio/
+*.mp3
+.DS_Store
+venv/
+.venv/

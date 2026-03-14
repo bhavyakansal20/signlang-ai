@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+{% set logged_in = true %}
+{% block title %}Session History — SignLang AI{% endblock %}
+{% block content %}
+<section class="history-page">
+  <div class="dash-bar">
+    <div>
+      <h1 class="dash-title">Session History</h1>
+      <p class="dash-sub">All detection sessions for <strong>{{ user_name }}</strong></p>
+    </div>
+    <a href="{{ url_for('dashboard') }}" class="btn btn-fire btn-sm">← Live Detection</a>
+  </div>
+
+  <div class="hist-table-wrap">
+    {% if sessions %}
+    <table>
+      <thead>
+        <tr>
+          <th>Date</th>
+          <th>Time</th>
+          <th>Sentence Built</th>
+          <th>Words</th>
+          <th>Duration</th>
+          <th>Word Log</th>
+          <th>Report</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for s in sessions | reverse %}
+        <tr>
+          <td>{{ s.get('date','—') }}</td>
+          <td class="td-mono">{{ s.get('time','—') }}</td>
+          <td style="max-width:260px;font-style:italic;color:var(--bone)">{{ s.get('sentence','—') or '—' }}</td>
+          <td><span class="td-pill">{{ s.get('word_count','0') }}</span></td>
+          <td class="td-mono">{{ s.get('duration','—') }}s</td>
+          <td class="td-mono" style="font-size:0.78rem;max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ s.get('words','—') }}</td>
+          <td><a href="{{ url_for('latest_pdf') }}" class="btn btn-ghost btn-sm">↓ PDF</a></td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% else %}
+    <div class="empty-hist">
+      <svg style="width:52px;height:52px;stroke:var(--bone-30);margin:0 auto 18px;display:block" viewBox="0 0 24 24" fill="none" stroke-width="1.2" stroke-linecap="round"><path d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+      <p style="font-size:1rem;margin-bottom:8px">No sessions yet.</p>
+      <p style="font-size:0.85rem"><a href="{{ url_for('dashboard') }}" style="color:var(--fire-lt);font-weight:600">Start detecting →</a> to record your first session.</p>
+    </div>
+    {% endif %}
+  </div>
+</section>
+{% endblock %}

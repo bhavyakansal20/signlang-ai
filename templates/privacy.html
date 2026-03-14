@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+{% block title %}Privacy Policy — SignLang AI{% endblock %}
+{% block content %}
+<div class="static-page" style="padding-top:56px">
+  <h1>Privacy Policy</h1>
+  <p class="meta">Effective date: 1 January 2026 &nbsp;·&nbsp; Last updated: March 2026</p>
+
+  <h2>1. Overview</h2>
+  <p>SignLang AI ("we", "our", "the project") is a personal accessibility project developed by Bhavya Kansal. This policy explains how we collect, use, and protect information when you use SignLang AI.</p>
+
+  <h2>2. Information We Collect</h2>
+  <ul>
+    <li><strong>Account data:</strong> Your name and email address provided at sign-up, stored securely in Google Sheets.</li>
+    <li><strong>Session data:</strong> Words recognized during sessions, built sentences, timestamps and confidence scores — stored against your account for history and PDF reports.</li>
+    <li><strong>Feedback:</strong> Star ratings and messages you submit voluntarily.</li>
+    <li><strong>Camera data:</strong> Video from your webcam is processed <em>entirely on your own device</em> in real-time. No video is ever recorded, stored, or transmitted to any server.</li>
+  </ul>
+
+  <h2>3. How We Use Your Data</h2>
+  <ul>
+    <li>To provide the SignLang AI service — session history, PDF reports and account functionality.</li>
+    <li>To improve model accuracy and user experience based on aggregate feedback.</li>
+    <li>We do not sell, rent or share your data with any third party.</li>
+  </ul>
+
+  <h2>4. Camera &amp; Biometric Data</h2>
+  <p>All hand-landmark processing runs locally in your browser via MediaPipe. Raw video frames are never sent to our servers. Only the recognized text output is stored in your session history.</p>
+
+  <h2>5. Data Storage</h2>
+  <p>Account and session data is stored in Google Sheets via a Google Apps Script endpoint. Passwords are stored as SHA-256 hashes — never in plain text.</p>
+
+  <h2>6. Your Rights</h2>
+  <p>You may request deletion of all your data at any time by contacting us at the GitHub repository linked in the footer. We will delete your account and session data within 7 days.</p>
+
+  <h2>7. Changes to This Policy</h2>
+  <p>We may update this policy periodically. Continued use of SignLang AI after changes constitutes acceptance of the new policy.</p>
+
+  <h2>8. Contact</h2>
+  <p>Questions? Open an issue on <a href="https://github.com/BhavyaKansal20/SignLang-AI" target="_blank" rel="noopener">GitHub</a>.</p>
+</div>
+{% endblock %}

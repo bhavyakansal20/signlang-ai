@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+  <meta name="description" content="SignLang AI — Real-time Indian Sign Language recognition. Built by Bhavya Kansal."/>
+  <title>{% block title %}SignLang AI{% endblock %}</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garant:ital,wght@0,400;0,600;0,700;1,400;1,600;1,700&family=Outfit:wght@300;400;500;600;700;800&family=DM+Mono:ital,wght@0,400;0,500;1,400&display=swap" rel="stylesheet"/>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}"/>
+</head>
+<body>
+
+<!-- Custom cursor -->
+<div class="cursor-dot"  id="cursorDot"></div>
+<div class="cursor-ring" id="cursorRing"></div>
+
+<!-- Background -->
+<div class="bg-layer" aria-hidden="true">
+  <div class="bg-mesh"></div>
+  <div class="bg-orb orb-1"></div>
+  <div class="bg-orb orb-2"></div>
+  <div class="bg-orb orb-3"></div>
+  <div class="bg-grain"></div>
+  <div class="bg-grid"></div>
+</div>
+
+<!-- Navbar -->
+<nav class="navbar" id="navbar" role="navigation" aria-label="Main navigation">
+  <a href="{{ url_for('index') }}" class="nav-logo" aria-label="SignLang AI home">
+    <div class="nav-logo-img">
+      <!-- Shows logo.png if present, else hand SVG -->
+      <img src="{{ url_for('static', filename='logo.png') }}"
+           onerror="this.parentElement.innerHTML='<svg viewBox=\'0 0 24 24\' fill=\'none\' stroke=\'#07060A\' stroke-width=\'2\' stroke-linecap=\'round\'><path d=\'M18 11V6a2 2 0 00-2-2 2 2 0 00-2 2M14 10V4a2 2 0 00-2-2 2 2 0 00-2 2v2M10 10.5V6a2 2 0 00-2-2 2 2 0 00-2 2v8\'/><path d=\'M18 8a2 2 0 114 0v6a8 8 0 01-8 8H9a8 8 0 01-8-8v-1a2 2 0 114 0\'/></svg>'"
+           alt="SignLang AI logo" style="width:38px;height:38px;object-fit:cover;border-radius:10px"/>
+    </div>
+    <span class="nav-logo-text">Sign<em>Lang</em> AI</span>
+  </a>
+
+  <div class="nav-links" role="list">
+    <a href="{{ url_for('index') }}"
+       class="nav-link {% if request.endpoint=='index' %}active{% endif %}" role="listitem">Home</a>
+    {% if 'user_email' in session %}
+    <a href="{{ url_for('dashboard') }}"
+       class="nav-link {% if request.endpoint=='dashboard' %}active{% endif %}" role="listitem">Dashboard</a>
+    <a href="{{ url_for('history') }}"
+       class="nav-link {% if request.endpoint=='history' %}active{% endif %}" role="listitem">History</a>
+    {% endif %}
+  </div>
+
+  <div class="nav-actions">
+    {% if 'user_email' in session %}
+    <span style="font-size:0.83rem;color:var(--bone-55);display:flex;align-items:center;gap:8px;">
+      <div class="nav-avatar">{{ session.get('user_name','U')[0].upper() }}</div>
+      {{ session.get('user_name','User').split()[0] }}
+    </span>
+    <a href="{{ url_for('signout') }}" class="btn btn-ghost btn-sm">Sign Out</a>
+    {% else %}
+    <a href="{{ url_for('signin') }}" class="btn btn-ghost btn-sm">Sign In</a>
+    <a href="{{ url_for('signup') }}" class="btn btn-fire btn-sm">Get Started</a>
+    {% endif %}
+  </div>
+</nav>
+
+<div class="page-wrap">
+  <main>{% block content %}{% endblock %}</main>
+
+  <!-- Footer -->
+  <footer class="footer" role="contentinfo">
+    <div class="footer-grid">
+      <div class="footer-brand">
+        <div class="nav-logo" style="margin-bottom:14px">
+          <div class="nav-logo-img" style="width:32px;height:32px">
+            <img src="{{ url_for('static', filename='logo.png') }}"
+                 onerror="this.parentElement.innerHTML='<svg viewBox=\'0 0 24 24\' fill=\'none\' stroke=\'#07060A\' stroke-width=\'2\' stroke-linecap=\'round\'><path d=\'M18 11V6a2 2 0 00-2-2 2 2 0 00-2 2M14 10V4a2 2 0 00-2-2 2 2 0 00-2 2v2M10 10.5V6a2 2 0 00-2-2 2 2 0 00-2 2v8\'/><path d=\'M18 8a2 2 0 114 0v6a8 8 0 01-8 8H9a8 8 0 01-8-8v-1a2 2 0 114 0\'/></svg>'"
+                 alt="" style="width:32px;height:32px;object-fit:cover;border-radius:8px"/>
+          </div>
+          <span style="font-family:var(--fd);font-size:1.1rem;font-weight:700">
+            Sign<em style="font-style:normal;color:var(--fire-lt)">Lang</em> AI
+          </span>
+        </div>
+        <p>Real-time Indian Sign Language recognition powered by MediaPipe and a custom-trained LSTM model. Built for India's 7 crore deaf and hard-of-hearing community.</p>
+      </div>
+
+      <div class="footer-col">
+        <h4>Product</h4>
+        <a href="{{ url_for('index') }}">Home</a>
+        {% if 'user_email' in session %}
+        <a href="{{ url_for('dashboard') }}">Dashboard</a>
+        <a href="{{ url_for('history') }}">History</a>
+        {% else %}
+        <a href="{{ url_for('signup') }}">Get Started</a>
+        <a href="{{ url_for('signin') }}">Sign In</a>
+        {% endif %}
+      </div>
+
+      <div class="footer-col">
+        <h4>Legal</h4>
+        <a href="{{ url_for('privacy') }}">Privacy Policy</a>
+        <a href="{{ url_for('terms') }}">Terms of Use</a>
+      </div>
+
+      <div class="footer-col">
+        <h4>Technology</h4>
+        <a href="https://mediapipe.dev" target="_blank" rel="noopener">MediaPipe</a>
+        <a href="https://pytorch.org" target="_blank" rel="noopener">PyTorch LSTM</a>
+        <a href="https://github.com/BhavyaKansal20/SignLang-AI" target="_blank" rel="noopener">GitHub →</a>
+      </div>
+    </div>
+
+    <div class="footer-bottom">
+      <div class="footer-copy">
+        <span>© 2026 SignLang AI. All rights reserved.</span>
+        <span>·</span>
+        <span>A project by <a href="https://github.com/BhavyaKansal20" target="_blank" rel="noopener">Bhavya Kansal</a></span>
+        <span>·</span>
+        <span>Made with <span class="footer-heart">♥</span> for accessibility</span>
+      </div>
+      <div class="footer-links">
+        <a href="{{ url_for('privacy') }}">Privacy</a>
+        <a href="{{ url_for('terms') }}">Terms</a>
+        <a href="https://github.com/BhavyaKansal20/SignLang-AI" target="_blank" rel="noopener">GitHub</a>
+      </div>
+    </div>
+  </footer>
+</div>
+
+<script src="{{ url_for('static', filename='js/main.js') }}"></script>
+{% block scripts %}{% endblock %}
+</body>
+</html>

@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% block title %}Sign In — SignLang AI{% endblock %}
+{% block content %}
+<div class="auth-page">
+  <div class="auth-box">
+    <div class="auth-brand">
+      <div class="nav-logo-img">
+        <svg viewBox="0 0 24 24" fill="none" stroke="var(--void)" stroke-width="2" stroke-linecap="round"><path d="M18 11V6a2 2 0 00-2-2 2 2 0 00-2 2M14 10V4a2 2 0 00-2-2 2 2 0 00-2 2v2M10 10.5V6a2 2 0 00-2-2 2 2 0 00-2 2v8M18 8a2 2 0 114 0v6a8 8 0 01-8 8H9a8 8 0 01-8-8v-1a2 2 0 114 0"/></svg>
+      </div>
+    </div>
+    <h1>Welcome back</h1>
+    <p>Sign in to your SignLang AI account to continue</p>
+    {% if error %}<div class="auth-err">{{ error }}</div>{% endif %}
+    <form method="POST">
+      <div class="field">
+        <label for="email">Email address</label>
+        <input type="email" id="email" name="email" placeholder="you@example.com" required autocomplete="email"/>
+      </div>
+      <div class="field">
+        <label for="password">Password</label>
+        <input type="password" id="password" name="password" placeholder="••••••••" required autocomplete="current-password"/>
+      </div>
+      <div style="margin-top:8px"><button type="submit" class="btn btn-fire btn-full">Sign In →</button></div>
+    </form>
+    <div class="auth-foot">Don't have an account? <a href="{{ url_for('signup') }}">Create one free</a></div>
+  </div>
+</div>
+{% endblock %}

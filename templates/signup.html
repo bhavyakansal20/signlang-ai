@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% block title %}Sign Up — SignLang AI{% endblock %}
+{% block content %}
+<div class="auth-page">
+  <div class="auth-box">
+    <div class="auth-brand">
+      <div class="nav-logo-img">
+        <svg viewBox="0 0 24 24" fill="none" stroke="var(--void)" stroke-width="2" stroke-linecap="round"><path d="M18 11V6a2 2 0 00-2-2 2 2 0 00-2 2M14 10V4a2 2 0 00-2-2 2 2 0 00-2 2v2M10 10.5V6a2 2 0 00-2-2 2 2 0 00-2 2v8M18 8a2 2 0 114 0v6a8 8 0 01-8 8H9a8 8 0 01-8-8v-1a2 2 0 114 0"/></svg>
+      </div>
+    </div>
+    <h1>Create your account</h1>
+    <p>Start using SignLang AI free — no credit card required</p>
+    {% if error %}<div class="auth-err">{{ error }}</div>{% endif %}
+    <form method="POST">
+      <div class="field">
+        <label for="name">Full Name</label>
+        <input type="text" id="name" name="name" placeholder="Bhavya Kansal" required autocomplete="name"/>
+      </div>
+      <div class="field">
+        <label for="email">Email address</label>
+        <input type="email" id="email" name="email" placeholder="you@example.com" required autocomplete="email"/>
+      </div>
+      <div class="field">
+        <label for="password">Password</label>
+        <input type="password" id="password" name="password" placeholder="Min. 6 characters" required autocomplete="new-password"/>
+      </div>
+      <div style="margin-top:8px"><button type="submit" class="btn btn-fire btn-full">Create Account →</button></div>
+    </form>
+    <div class="auth-foot">Already have an account? <a href="{{ url_for('signin') }}">Sign in</a></div>
+  </div>
+</div>
+{% endblock %}
