@@ -28,15 +28,17 @@ predictor  = GesturePredictor(model_path="model/signlang_model.pt",
 sentence_b = SentenceBuilder()
 
 # ── Global state ──────────────────────────────────────────────
-camera_lock  = threading.Lock()
+camera_lock   = threading.Lock()
 current_frame = None
 current_pred  = {"word": "", "confidence": 0.0, "sentence": "", "num_hands": 0}
 camera_active = False
 cap           = None
 session_words = []
 session_start = None
-# NOTE: landmark_buffer is now per-user via Flask session["lm_buffer"]
-# This fixes the multi-user interference bug where two users shared one buffer
+
+# ✅ Server-side per-user landmark buffers (keyed by email)
+# Avoids Flask cookie 4KB limit which silently dropped buffer data
+user_buffers = {}
 
 # ── Helpers ───────────────────────────────────────────────────
 def hash_pw(p): return hashlib.sha256(p.encode()).hexdigest()
@@ -133,11 +135,13 @@ def terms():
 @login_req
 def start_camera():
     global session_words, session_start, current_pred
-    session_words        = []
-    session_start        = time.time()
-    session["lm_buffer"] = []   # ✅ per-user buffer cleared on start
-    current_pred         = {"word": "", "confidence": 0.0, "sentence": "", "num_hands": 0}
+    email = session["user_email"]
+    session_words      = []
+    session_start      = time.time()
+    user_buffers[email] = []   # ✅ clear server-side buffer for this user
+    current_pred       = {"word": "", "confidence": 0.0, "sentence": "", "num_hands": 0}
     sentence_b.reset()
+    print(f"[Start] Session started for {email}")
     return jsonify({"status": "started"})
 
 @app.route("/api/frame", methods=["POST"])
@@ -153,7 +157,7 @@ def process_frame():
     if not data or "frame" not in data:
         return jsonify(current_pred)
 
-    # Decode base64 JPEG frame sent from browser
+    # Decode base64 JPEG from browser
     try:
         img_data  = data["frame"].split(",")[1]
         img_bytes = base64.b64decode(img_data)
@@ -164,25 +168,29 @@ def process_frame():
         return jsonify(current_pred)
 
     if frame is None:
-        print("[Frame] frame is None after decode")
         return jsonify(current_pred)
 
-    # Extract landmarks (no cv2.flip — browser already mirrors front cam)
+    # Extract landmarks — no cv2.flip (browser already mirrors front cam)
     rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
     lm, annotated, num_hands = extractor.extract(rgb, frame.copy())
 
-    print(f"[Frame] hands={num_hands} lm={lm is not None} buf={len(session.get('lm_buffer', []))}")
+    email = session["user_email"]
+
+    # Ensure buffer exists for this user
+    if email not in user_buffers:
+        user_buffers[email] = []
 
     if lm is not None:
-        # ✅ Per-user buffer stored in Flask session — no multi-user interference
-        user_buffer = session.get("lm_buffer", [])
-        user_buffer.append(lm.tolist())   # tolist() needed for JSON serialization
-        if len(user_buffer) > 30:
-            user_buffer.pop(0)
-        session["lm_buffer"] = user_buffer
+        # ✅ Server-side buffer — no cookie size limit
+        user_buffers[email].append(lm.tolist())
+        if len(user_buffers[email]) > 30:
+            user_buffers[email].pop(0)
 
-        if len(user_buffer) == 30:
-            word, conf = predictor.predict(np.array(user_buffer))
+        buf_len = len(user_buffers[email])
+        print(f"[Frame] hands={num_hands} lm=True buf={buf_len}")
+
+        if buf_len == 30:
+            word, conf = predictor.predict(np.array(user_buffers[email]))
             print(f"[Frame] prediction: word={word} conf={conf:.2f}")
 
             if conf > 0.70 and word:
@@ -206,6 +214,8 @@ def process_frame():
                     "sentence":   sentence_b.get_sentence(),
                     "num_hands":  num_hands,
                 }
+    else:
+        print(f"[Frame] hands=0 lm=False buf={len(user_buffers[email])}")
 
     return jsonify(current_pred)
 
@@ -213,12 +223,15 @@ def process_frame():
 @login_req
 def stop_camera():
     global session_words, session_start
+    email    = session["user_email"]
     duration = int(time.time() - (session_start or time.time()))
-    session["lm_buffer"] = []   # clear per-user buffer on stop
+
+    # Clear server-side buffer for this user
+    user_buffers[email] = []
 
     if session_words:
         sheets.add_session({
-            "email":      session["user_email"],
+            "email":      email,
             "name":       session.get("user_name", ""),
             "date":       datetime.now().strftime("%Y-%m-%d"),
             "time":       datetime.now().strftime("%H:%M:%S"),
@@ -231,6 +244,7 @@ def stop_camera():
     result = {"status": "stopped", "words": session_words,
               "sentence": sentence_b.get_sentence(), "duration": duration}
     session_words = []
+    print(f"[Stop] Session ended for {email} — {len(result['words'])} words")
     return jsonify(result)
 
 @app.route("/api/camera/status")
