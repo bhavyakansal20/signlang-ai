@@ -22,8 +22,8 @@ APPS_SCRIPT_URL = os.environ.get(
     "https://script.google.com/macros/s/AKfycbzTDIeaGWbaDrR5ivqLZ-UDMZ8lbqzX9kPi2kStNtXY_-9wncQawQq7EV4FdkamHTud/exec"
 )
 sheets     = SheetsClient(apps_script_url=APPS_SCRIPT_URL)
-extractor  = LandmarkExtractor()
-predictor  = GesturePredictor(model_path="model/signlang_model.pt",
+extractor = None
+predictor = GesturePredictor(model_path="model/signlang_model.pt",
                                label_map_path="model/label_map.json")
 sentence_b = SentenceBuilder()
 
@@ -197,7 +197,10 @@ def terms():
 @app.route("/api/camera/start", methods=["POST"])
 @login_req
 def start_camera():
-    global camera_active, session_words, session_start
+    global camera_active, session_words, session_start, extractor
+    if extractor is None:
+        extractor = LandmarkExtractor()
+    # ... rest of function stays the same
     if not camera_active:
         camera_active = True
         session_words = []
