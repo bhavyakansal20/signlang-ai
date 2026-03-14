@@ -5,7 +5,6 @@
 {% block content %}
 <section class="dashboard">
 
-  <!-- Top bar -->
   <div class="dash-bar">
     <div>
       <h1 class="dash-title">Live Detection</h1>
@@ -27,21 +26,16 @@
     </div>
   </div>
 
-  <!-- Main grid -->
   <div class="dash-grid">
 
-    <!-- Camera column -->
     <div class="cam-wrap">
       <div class="cam-box" id="camBox">
-        <!-- Corner brackets -->
         <div class="c-bracket tl"></div>
         <div class="c-bracket tr"></div>
         <div class="c-bracket bl"></div>
         <div class="c-bracket br"></div>
-        <!-- Scan line -->
         <div class="cam-scan"></div>
 
-        <!-- Idle state -->
         <div class="cam-idle" id="camIdle">
           <svg class="cam-idle-hand" viewBox="0 0 120 160" fill="none"
                stroke="rgba(240,130,15,0.6)" stroke-width="1.5" stroke-linecap="round">
@@ -56,10 +50,9 @@
           <small>Press <span class="hotkey">Space</span> or click Start</small>
         </div>
 
-        <!-- Video -->
-        <img id="videoFeed" class="cam-feed" src="" alt="Live camera feed"/>
+        <!-- ✅ Changed from <img> to <video> for browser webcam -->
+        <video id="videoFeed" class="cam-feed" autoplay playsinline muted></video>
 
-        <!-- HUD overlay -->
         <div class="pred-hud" id="predHud">
           <div class="pred-main">
             <div class="pred-sign" id="predSign">—</div>
@@ -80,7 +73,6 @@
         </div>
       </div>
 
-      <!-- Controls -->
       <div class="cam-controls">
         <button class="btn btn-fire" id="btnStart" onclick="startCamera()">
           <svg class="btn-icon" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clip-rule="evenodd"/></svg>
@@ -102,17 +94,14 @@
         </button>
       </div>
 
-      <!-- Confidence sparkline -->
       <div class="glass" style="padding:16px 20px">
         <div class="spark-title">Confidence over time</div>
         <canvas id="sparkCanvas"></canvas>
       </div>
     </div>
 
-    <!-- Right column -->
     <div class="right-col">
 
-      <!-- Sentence card -->
       <div class="sentence-card glass" id="sentCard">
         <div class="card-head">
           <span class="card-label">Current Sentence</span>
@@ -121,21 +110,15 @@
         <div class="sentence-area" id="sentArea">
           <span class="sentence-ph">Recognized signs will build your sentence here…</span>
         </div>
-
-        <!-- NLP polished -->
         <div class="nlp-output" id="nlpOut">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" stroke-linecap="round" stroke-linejoin="round"/></svg>
           <strong>Polished:</strong>
           <span id="nlpText">—</span>
         </div>
-
-        <!-- Hindi translation -->
         <div class="hindi-strip" id="hindiStrip">
           <span style="font-size:1.1rem">🇮🇳</span>
           <span id="hindiText">—</span>
         </div>
-
-        <!-- Actions -->
         <div class="sentence-actions">
           <button class="btn btn-ghost btn-sm" onclick="copySentence()">📋 Copy</button>
           <button class="btn btn-jade btn-sm"  onclick="polishNLP()">✨ Polish</button>
@@ -145,11 +128,8 @@
         </div>
       </div>
 
-      <!-- Quick actions -->
       <div class="glass" style="overflow:hidden">
-        <div class="card-head">
-          <span class="card-label">Quick Actions</span>
-        </div>
+        <div class="card-head"><span class="card-label">Quick Actions</span></div>
         <div class="card-body">
           <div class="quick-actions">
             <button class="qa-btn" onclick="speakSentence('en')">
@@ -176,7 +156,6 @@
         </div>
       </div>
 
-      <!-- Words log -->
       <div class="glass" style="overflow:hidden">
         <div class="card-head">
           <span class="card-label">Words Log</span>
@@ -189,11 +168,8 @@
         </div>
       </div>
 
-      <!-- Feedback -->
       <div class="glass" style="overflow:hidden">
-        <div class="card-head">
-          <span class="card-label">Rate your session</span>
-        </div>
+        <div class="card-head"><span class="card-label">Rate your session</span></div>
         <div class="card-body">
           <div class="stars" id="starsRow">
             {% for i in range(1,6) %}
@@ -208,11 +184,10 @@
         </div>
       </div>
 
-    </div><!-- /right-col -->
-  </div><!-- /dash-grid -->
+    </div>
+  </div>
 </section>
 
-<!-- ── Sign Dictionary Drawer ──────────────────────────────────── -->
 <div class="dict-overlay" id="dictOverlay" onclick="closeDict(event)">
   <div class="dict-drawer">
     <div class="dict-header">
@@ -230,42 +205,17 @@
   </div>
 </div>
 
-<!-- ── Keyboard Shortcuts Overlay ──────────────────────────────── -->
 <div class="shortcuts-overlay" id="shortcutsOverlay" onclick="closeShortcuts(event)">
   <div class="shortcuts-box">
     <h3>⌨️ Keyboard Shortcuts</h3>
-    <div class="shortcut-row">
-      <span class="sk">Space</span>
-      <span class="sk-desc">Start / Stop camera</span>
-    </div>
-    <div class="shortcut-row">
-      <span class="sk">C</span>
-      <span class="sk-desc">Clear sentence</span>
-    </div>
-    <div class="shortcut-row">
-      <span class="sk">H</span>
-      <span class="sk-desc">Toggle Hindi voice</span>
-    </div>
-    <div class="shortcut-row">
-      <span class="sk">D</span>
-      <span class="sk-desc">Open sign dictionary</span>
-    </div>
-    <div class="shortcut-row">
-      <span class="sk">S</span>
-      <span class="sk-desc">Speak sentence (English)</span>
-    </div>
-    <div class="shortcut-row">
-      <span class="sk">P</span>
-      <span class="sk-desc">Polish sentence (NLP)</span>
-    </div>
-    <div class="shortcut-row">
-      <span class="sk">?</span>
-      <span class="sk-desc">Toggle this panel</span>
-    </div>
-    <div class="shortcut-row">
-      <span class="sk">Esc</span>
-      <span class="sk-desc">Close overlays</span>
-    </div>
+    <div class="shortcut-row"><span class="sk">Space</span><span class="sk-desc">Start / Stop camera</span></div>
+    <div class="shortcut-row"><span class="sk">C</span><span class="sk-desc">Clear sentence</span></div>
+    <div class="shortcut-row"><span class="sk">H</span><span class="sk-desc">Toggle Hindi voice</span></div>
+    <div class="shortcut-row"><span class="sk">D</span><span class="sk-desc">Open sign dictionary</span></div>
+    <div class="shortcut-row"><span class="sk">S</span><span class="sk-desc">Speak sentence (English)</span></div>
+    <div class="shortcut-row"><span class="sk">P</span><span class="sk-desc">Polish sentence (NLP)</span></div>
+    <div class="shortcut-row"><span class="sk">?</span><span class="sk-desc">Toggle this panel</span></div>
+    <div class="shortcut-row"><span class="sk">Esc</span><span class="sk-desc">Close overlays</span></div>
     <div style="margin-top:20px;text-align:center">
       <button class="btn btn-fire btn-sm" onclick="closeShortcuts()">Got it</button>
     </div>
