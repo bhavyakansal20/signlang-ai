@@ -144,13 +144,64 @@ def start_camera():
 def process_frame():
     global current_pred, session_words, landmark_buffer, extractor
 
-    # Lazy-load extractor on first frame
     if extractor is None:
         extractor = LandmarkExtractor()
 
     data = request.get_json()
     if not data or "frame" not in data:
         return jsonify(current_pred)
+
+    try:
+        img_data  = data["frame"].split(",")[1]
+        img_bytes = base64.b64decode(img_data)
+        np_arr    = np.frombuffer(img_bytes, np.uint8)
+        frame     = cv2.imdecode(np_arr, cv2.IMREAD_COLOR)
+    except Exception as e:
+        print(f"[Frame] Decode error: {e}")
+        return jsonify(current_pred)
+
+    if frame is None:
+        print("[Frame] frame is None after decode")
+        return jsonify(current_pred)
+
+    print(f"[Frame] shape={frame.shape} buffer={len(landmark_buffer)}")  # ← ADD THIS
+
+    rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+    lm, annotated, num_hands = extractor.extract(rgb, frame.copy())
+
+    print(f"[Frame] hands={num_hands} lm={lm is not None}")  # ← ADD THIS
+
+    if lm is not None:
+        landmark_buffer.append(lm)
+        if len(landmark_buffer) > 30:
+            landmark_buffer.pop(0)
+
+        if len(landmark_buffer) == 30:
+            word, conf = predictor.predict(np.array(landmark_buffer))
+            print(f"[Frame] prediction: word={word} conf={conf:.2f}")  # ← ADD THIS
+            if conf > 0.70 and word:
+                added = sentence_b.add_word(word)
+                if added:
+                    session_words.append({
+                        "word":       word,
+                        "confidence": round(conf * 100, 1),
+                        "timestamp":  datetime.now().strftime("%H:%M:%S")
+                    })
+                current_pred = {
+                    "word":       word,
+                    "confidence": round(conf * 100, 1),
+                    "sentence":   sentence_b.get_sentence(),
+                    "num_hands":  num_hands,
+                }
+            else:
+                current_pred = {
+                    "word":       "",
+                    "confidence": round(conf * 100, 1),
+                    "sentence":   sentence_b.get_sentence(),
+                    "num_hands":  num_hands,
+                }
+
+    return jsonify(current_pred)
 
     # Decode base64 frame from browser
     try:
