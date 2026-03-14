@@ -17,9 +17,9 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 COPY . .
 
+ENV PYTHONUNBUFFERED=1
 ENV MEDIAPIPE_DISABLE_GPU=1
-ENV DISPLAY=:0
 
 EXPOSE 7860
 
-CMD ["python", "app.py"]
+CMD ["python", "-u", "app.py"]
