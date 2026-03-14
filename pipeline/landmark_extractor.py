@@ -1,16 +1,20 @@
 """pipeline/landmark_extractor.py"""
+import os
 import numpy as np
 import cv2
+
+os.environ["MEDIAPIPE_DISABLE_GPU"] = "1"
 
 class LandmarkExtractor:
     def __init__(self, max_hands=2, min_detection_conf=0.6, min_tracking_conf=0.5):
         import mediapipe as mp
         self.mp      = mp
         self.hands   = mp.solutions.hands.Hands(
-            static_image_mode=False,
+            static_image_mode=True,    # ← changed from False
             max_num_hands=max_hands,
             min_detection_confidence=min_detection_conf,
             min_tracking_confidence=min_tracking_conf,
+            model_complexity=0,        # ← added: lighter + faster on CPU
         )
         self.draw    = mp.solutions.drawing_utils
         self.styles  = mp.solutions.drawing_styles
