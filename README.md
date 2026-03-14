@@ -25,7 +25,7 @@ pinned: false
 
 <br>
 
-[![Live Demo](https://img.shields.io/badge/🚀%20Live%20Demo-Visit%20Now-F0820F?style=for-the-badge&labelColor=07060A)](https://huggingface.co/spaces/Kansal0920/SignLang-AI)
+[![Live Demo](https://bit.ly/SignLang-AI)
 [![GitHub Repo](https://img.shields.io/badge/⭐%20GitHub-Star%20Repo-F0820F?style=for-the-badge&labelColor=07060A)](https://github.com/BhavyaKansal20/SignLang-AI)
 
 <br>
@@ -633,6 +633,6 @@ Every star helps this project reach more people who need it. 🙏
   ╚══════════════════════════════════════════════════════╝
 ```
 
-[![Live Demo](https://img.shields.io/badge/🚀%20Try%20It%20Live-SignLang%20AI%20on%20HuggingFace-F0820F?style=for-the-badge)](https://huggingface.co/spaces/Kansal0920/SignLang-AI)
+[![Live Demo](https://bit.ly/SignLang-AI)
 
 </div>
