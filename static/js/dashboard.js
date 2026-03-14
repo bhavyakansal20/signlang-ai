@@ -1,22 +1,23 @@
-/* SignLang AI — Dashboard v3 */
+/* SignLang AI — Dashboard v3 — Browser Webcam */
 "use strict";
 
 // ── State ──────────────────────────────────────────────────────
-let isLive     = false;
-let hindiOn    = false;
-let rating     = 0;
-let wordCount  = 0;
-let pollTimer  = null;
+let isLive        = false;
+let hindiOn       = false;
+let rating        = 0;
+let wordCount     = 0;
+let frameInterval = null;
 let timerInterval = null;
 let sessionStart  = null;
-let lastWord   = "";
-let confHistory = [];       // for sparkline
-let totalWords = 0;
+let lastWord      = "";
+let confHistory   = [];
+let totalWords    = 0;
+let browserStream = null;
 
 // ── DOM ────────────────────────────────────────────────────────
 const $ = id => document.getElementById(id);
 const camBox    = $("camBox");
-const videoFeed = $("videoFeed");
+const videoFeed = $("videoFeed");   // now a <video> element
 const camIdle   = $("camIdle");
 const predHud   = $("predHud");
 const predSign  = $("predSign");
@@ -32,53 +33,100 @@ const timerEl   = $("sessionTimer");
 const sparkCvs  = $("sparkCanvas");
 const sparkCtx  = sparkCvs ? sparkCvs.getContext("2d") : null;
 
-// ── Camera ─────────────────────────────────────────────────────
-async function startCamera() {
-  await fetch("/api/camera/start", { method: "POST" });
+// ── Canvas for sending frames to server ───────────────────────
+const offCanvas = document.createElement("canvas");
+offCanvas.width  = 640;
+offCanvas.height = 480;
+const offCtx = offCanvas.getContext("2d");
 
-  videoFeed.src = "/video_feed";
+// ── Start Camera ──────────────────────────────────────────────
+async function startCamera() {
+  // Request browser webcam
+  try {
+    browserStream = await navigator.mediaDevices.getUserMedia({
+      video: { width: 640, height: 480, facingMode: "user" },
+      audio: false
+    });
+  } catch (e) {
+    toast("Camera access denied — please allow camera in your browser settings", "err");
+    return;
+  }
+
+  // Attach stream to video element
+  videoFeed.srcObject = browserStream;
   videoFeed.classList.add("on");
   camIdle.style.display = "none";
   camBox.classList.add("live");
 
+  // Notify server session started
+  await fetch("/api/camera/start", { method: "POST" });
+
+  // UI state
   btnStart.classList.add("hidden");
   btnStop.classList.remove("hidden");
   liveBadge.classList.add("on");
   timerEl.classList.add("on");
-
   sessionStart = Date.now();
   wordCount = 0; totalWords = 0; confHistory = [];
+  lastWord = "";
   sentArea.innerHTML = '<span class="sentence-ph">Listening… show your hand and start signing</span>';
-  wordsLog.innerHTML = '';
+  wordsLog.innerHTML = "";
   updateWordCount(0);
   updateLogCount(0);
   $("btnReport").style.display = "none";
   $("nlpOut").classList.remove("on");
   $("hindiStrip").classList.remove("on");
+  $("sentCard").classList.remove("fire-glow");
 
   isLive = true;
   timerInterval = setInterval(tickTimer, 1000);
-  pollTimer     = setInterval(pollStatus, 280);
+
+  // Send frames to server every 120ms (~8 FPS — enough for sign detection)
+  frameInterval = setInterval(sendFrame, 120);
 }
 
+// ── Send frame to server ──────────────────────────────────────
+async function sendFrame() {
+  if (!isLive || !browserStream) return;
+  try {
+    offCtx.drawImage(videoFeed, 0, 0, 640, 480);
+    const frameData = offCanvas.toDataURL("image/jpeg", 0.7);
+    const res  = await fetch("/api/frame", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ frame: frameData })
+    });
+    const data = await res.json();
+    updateHUD(data);
+  } catch (e) { /* silent */ }
+}
+
+// ── Stop Camera ───────────────────────────────────────────────
 async function stopCamera() {
   isLive = false;
-  clearInterval(pollTimer);
+  clearInterval(frameInterval);
   clearInterval(timerInterval);
 
-  const res  = await fetch("/api/camera/stop", { method: "POST" });
-  const data = await res.json();
+  // Stop browser stream
+  if (browserStream) {
+    browserStream.getTracks().forEach(t => t.stop());
+    browserStream = null;
+  }
 
-  videoFeed.src = "";
+  videoFeed.srcObject = null;
   videoFeed.classList.remove("on");
   camIdle.style.display = "flex";
   camBox.classList.remove("live");
+  predHud.classList.remove("on");
 
   btnStop.classList.add("hidden");
   btnStart.classList.remove("hidden");
   liveBadge.classList.remove("on");
   timerEl.classList.remove("on");
-  predHud.classList.remove("on");
+
+  // Save session
+  const res  = await fetch("/api/camera/stop", { method: "POST" });
+  const data = await res.json();
 
   if (data.words && data.words.length > 0) {
     $("btnReport").style.display = "inline-flex";
@@ -86,76 +134,66 @@ async function stopCamera() {
   toast(`Session saved — ${data.words ? data.words.length : 0} words recognized`, "ok");
 }
 
-// ── Session timer ───────────────────────────────────────────────
+// ── Update HUD from server response ──────────────────────────
+function updateHUD(data) {
+  if (data.word && data.confidence > 0) {
+    predSign.textContent = data.word;
+    confNum.textContent  = Math.round(data.confidence) + "%";
+
+    // Confidence arc
+    const pct    = data.confidence / 100;
+    const circum = 2 * Math.PI * 21;
+    confArc.style.strokeDashoffset = circum - pct * circum;
+    confArc.style.stroke = data.confidence > 85 ? "var(--jade)" :
+                           data.confidence > 65 ? "var(--fire)" : "var(--rose)";
+
+    // Hand count
+    if (data.num_hands && data.num_hands > 0) {
+      predHands.textContent = "✋".repeat(Math.min(data.num_hands, 2)) +
+                              ` ${data.num_hands}-hand`;
+    } else {
+      predHands.textContent = "";
+    }
+
+    predHud.classList.add("on");
+    confHistory.push(data.confidence);
+    if (confHistory.length > 60) confHistory.shift();
+    drawSparkline();
+  } else {
+    predHud.classList.remove("on");
+  }
+
+  // Sentence
+  if (data.sentence) {
+    const words = data.sentence.split(" ").filter(Boolean);
+    if (words.length > 0) {
+      sentArea.innerHTML = words
+        .map(w => `<span class="sentence-word">${w}</span>`)
+        .join(" ");
+      $("sentCard").classList.add("fire-glow");
+      wordCount = words.length;
+      updateWordCount(wordCount);
+    }
+  }
+
+  // New word log
+  if (data.word && data.word !== lastWord && data.confidence > 68) {
+    appendLogEntry(data.word, data.confidence);
+    lastWord = data.word;
+    if (hindiOn) speakWord(data.word, "hi");
+  }
+}
+
+// ── Session timer ─────────────────────────────────────────────
 function tickTimer() {
   if (!sessionStart) return;
-  const s = Math.floor((Date.now() - sessionStart) / 1000);
+  const s  = Math.floor((Date.now() - sessionStart) / 1000);
   const mm = String(Math.floor(s / 60)).padStart(2, "0");
   const ss = String(s % 60).padStart(2, "0");
   timerEl.innerHTML = `⏱ ${mm}:${ss}`;
 }
 
-// ── Status polling ──────────────────────────────────────────────
-async function pollStatus() {
-  try {
-    const res  = await fetch("/api/camera/status");
-    const data = await res.json();
-
-    if (data.word && data.confidence > 0) {
-      // Update HUD
-      predSign.textContent = data.word;
-      confNum.textContent  = Math.round(data.confidence) + "%";
-
-      // Animated arc
-      const pct    = data.confidence / 100;
-      const circum = 2 * Math.PI * 21;
-      const offset = circum - pct * circum;
-      confArc.style.strokeDashoffset = offset;
-      confArc.style.stroke = data.confidence > 85 ? "var(--jade)" :
-                              data.confidence > 65 ? "var(--fire)" : "var(--rose)";
-
-      // Hand count
-      if (data.num_hands !== undefined && data.num_hands > 0) {
-        predHands.textContent = "✋".repeat(data.num_hands) + ` ${data.num_hands}-hand`;
-      } else {
-        predHands.textContent = "";
-      }
-
-      predHud.classList.add("on");
-
-      // Track confidence history for sparkline
-      confHistory.push(data.confidence);
-      if (confHistory.length > 60) confHistory.shift();
-      drawSparkline();
-    } else {
-      predHud.classList.remove("on");
-    }
-
-    // Update sentence
-    if (data.sentence) {
-      const words = data.sentence.split(" ").filter(Boolean);
-      if (words.length > 0) {
-        sentArea.innerHTML = words
-          .map(w => `<span class="sentence-word">${w}</span>`)
-          .join(" ");
-        $("sentCard").classList.add("fire-glow");
-        wordCount = words.length;
-        updateWordCount(wordCount);
-      }
-    }
-
-    // New word → log entry
-    if (data.word && data.word !== lastWord && data.confidence > 68) {
-      appendLogEntry(data.word, data.confidence);
-      lastWord = data.word;
-
-      // If hindi voice on, auto-speak hindi for new word
-      if (hindiOn) speakWord(data.word, "hi");
-    }
-  } catch (e) { /* silent */ }
-}
-
-// ── Sparkline ───────────────────────────────────────────────────
+// ── Sparkline ─────────────────────────────────────────────────
 function drawSparkline() {
   if (!sparkCtx || confHistory.length < 2) return;
   const W = sparkCvs.offsetWidth;
@@ -163,39 +201,25 @@ function drawSparkline() {
   sparkCvs.width  = W * window.devicePixelRatio;
   sparkCvs.height = H * window.devicePixelRatio;
   sparkCtx.scale(window.devicePixelRatio, window.devicePixelRatio);
-
   sparkCtx.clearRect(0, 0, W, H);
-
   const step = W / (confHistory.length - 1);
-
-  // Gradient fill
   const grad = sparkCtx.createLinearGradient(0, 0, 0, H);
-  grad.addColorStop(0,   "rgba(240,130,15,0.25)");
-  grad.addColorStop(1,   "rgba(240,130,15,0)");
-
+  grad.addColorStop(0, "rgba(240,130,15,0.25)");
+  grad.addColorStop(1, "rgba(240,130,15,0)");
   sparkCtx.beginPath();
   sparkCtx.moveTo(0, H - (confHistory[0] / 100) * H);
   for (let i = 1; i < confHistory.length; i++) {
     sparkCtx.lineTo(i * step, H - (confHistory[i] / 100) * H);
   }
-  sparkCtx.lineTo(W, H);
-  sparkCtx.lineTo(0, H);
-  sparkCtx.closePath();
-  sparkCtx.fillStyle = grad;
-  sparkCtx.fill();
-
-  // Line
+  sparkCtx.lineTo(W, H); sparkCtx.lineTo(0, H); sparkCtx.closePath();
+  sparkCtx.fillStyle = grad; sparkCtx.fill();
   sparkCtx.beginPath();
   sparkCtx.moveTo(0, H - (confHistory[0] / 100) * H);
   for (let i = 1; i < confHistory.length; i++) {
     sparkCtx.lineTo(i * step, H - (confHistory[i] / 100) * H);
   }
   sparkCtx.strokeStyle = "var(--fire)";
-  sparkCtx.lineWidth   = 2;
-  sparkCtx.lineJoin    = "round";
-  sparkCtx.stroke();
-
-  // Last point dot
+  sparkCtx.lineWidth = 2; sparkCtx.lineJoin = "round"; sparkCtx.stroke();
   const last = confHistory[confHistory.length - 1];
   sparkCtx.beginPath();
   sparkCtx.arc(W, H - (last / 100) * H, 4, 0, Math.PI * 2);
@@ -203,19 +227,15 @@ function drawSparkline() {
   sparkCtx.fill();
 }
 
-// ── Log entries ─────────────────────────────────────────────────
+// ── Log entries ───────────────────────────────────────────────
 function appendLogEntry(word, conf) {
   const empty = wordsLog.querySelector(".log-empty");
   if (empty) empty.remove();
-
-  const t = new Date().toLocaleTimeString("en-IN", { hour12: false });
+  const t  = new Date().toLocaleTimeString("en-IN", { hour12: false });
   const el = document.createElement("div");
   el.className = "log-item";
   el.innerHTML = `
-    <span class="log-word">
-      ${word}
-      <span class="log-pct">${Math.round(conf)}%</span>
-    </span>
+    <span class="log-word">${word}<span class="log-pct">${Math.round(conf)}%</span></span>
     <span class="log-time">${t}</span>
   `;
   wordsLog.insertBefore(el, wordsLog.firstChild);
@@ -230,7 +250,7 @@ function updateLogCount(n) {
   $("logCount").textContent = n;
 }
 
-// ── Sentence controls ───────────────────────────────────────────
+// ── Sentence controls ─────────────────────────────────────────
 async function clearSentence() {
   await fetch("/api/sentence/clear", { method: "POST" });
   sentArea.innerHTML = '<span class="sentence-ph">Cleared — keep signing…</span>';
@@ -274,7 +294,7 @@ function copySentence() {
   navigator.clipboard.writeText(text).then(() => toast("Copied to clipboard!", "ok"));
 }
 
-// ── TTS ─────────────────────────────────────────────────────────
+// ── TTS ───────────────────────────────────────────────────────
 async function speakSentence(lang) {
   const res  = await fetch("/api/tts/sentence", {
     method: "POST",
@@ -305,7 +325,7 @@ function playAudioB64(b64) {
   audio.play().catch(() => {});
 }
 
-// ── Hindi toggle ────────────────────────────────────────────────
+// ── Hindi toggle ──────────────────────────────────────────────
 function toggleHindi() {
   hindiOn = !hindiOn;
   $("hindiLabel").textContent = hindiOn ? "Hindi On" : "Hindi Off";
@@ -313,7 +333,7 @@ function toggleHindi() {
   toast(hindiOn ? "Hindi voice enabled 🇮🇳" : "Hindi voice off", "info");
 }
 
-// ── Dictionary ──────────────────────────────────────────────────
+// ── Dictionary ────────────────────────────────────────────────
 function openDict() {
   $("dictOverlay").classList.add("open");
   document.body.style.overflow = "hidden";
@@ -329,7 +349,7 @@ function dictSpeak(sign) {
   toast(`Speaking: ${sign}`, "info");
 }
 
-// ── Shortcuts overlay ────────────────────────────────────────────
+// ── Shortcuts ─────────────────────────────────────────────────
 function openShortcuts() {
   $("shortcutsOverlay").classList.add("open");
   document.body.style.overflow = "hidden";
@@ -341,26 +361,20 @@ function closeShortcuts(e) {
   }
 }
 
-// ── Keyboard shortcuts ───────────────────────────────────────────
+// ── Keyboard shortcuts ────────────────────────────────────────
 document.addEventListener("keydown", e => {
   if (e.target.tagName === "TEXTAREA" || e.target.tagName === "INPUT") return;
   switch (e.code) {
     case "Space":
       e.preventDefault();
-      isLive ? stopCamera() : startCamera();
-      break;
-    case "KeyC":
-      clearSentence(); break;
-    case "KeyH":
-      toggleHindi(); break;
+      isLive ? stopCamera() : startCamera(); break;
+    case "KeyC": clearSentence(); break;
+    case "KeyH": toggleHindi(); break;
     case "KeyD":
       $("dictOverlay").classList.contains("open") ? closeDict() : openDict(); break;
-    case "KeyS":
-      speakSentence("en"); break;
-    case "KeyP":
-      polishNLP(); break;
-    case "Escape":
-      closeDict(); closeShortcuts(); break;
+    case "KeyS": speakSentence("en"); break;
+    case "KeyP": polishNLP(); break;
+    case "Escape": closeDict(); closeShortcuts(); break;
     case "Slash":
       if (e.shiftKey) {
         $("shortcutsOverlay").classList.contains("open") ? closeShortcuts() : openShortcuts();
@@ -369,7 +383,7 @@ document.addEventListener("keydown", e => {
   }
 });
 
-// ── Feedback ────────────────────────────────────────────────────
+// ── Feedback ──────────────────────────────────────────────────
 function setRating(v) {
   rating = v;
   document.querySelectorAll(".star").forEach(s => {
@@ -390,10 +404,10 @@ async function submitFeedback() {
   document.querySelectorAll(".star").forEach(s => s.classList.remove("lit"));
 }
 
-// ── PDF ─────────────────────────────────────────────────────────
+// ── PDF ───────────────────────────────────────────────────────
 function downloadReport() { window.location.href = "/api/report/latest"; }
 
-// ── Toast ────────────────────────────────────────────────────────
+// ── Toast ─────────────────────────────────────────────────────
 function toast(msg, type = "info") {
   document.querySelectorAll(".toast").forEach(t => t.remove());
   const el = document.createElement("div");
