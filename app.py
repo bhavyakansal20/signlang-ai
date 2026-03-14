@@ -194,19 +194,50 @@ def terms():
     return render_template("terms.html")
 
 # ── Camera API ────────────────────────────────────────────────
-@app.route("/api/camera/start", methods=["POST"])
+@app.route("/api/frame", methods=["POST"])
 @login_req
-def start_camera():
-    global camera_active, session_words, session_start, extractor
+def process_frame():
+    global current_pred, session_words, extractor, predictor
+    
     if extractor is None:
         extractor = LandmarkExtractor()
-    if not camera_active:
-        camera_active = True
-        session_words = []
-        session_start = time.time()
-        sentence_b.reset()
-        threading.Thread(target=camera_thread, daemon=True).start()
-    return jsonify({"status":"started"})
+    
+    # Get frame from browser
+    data = request.get_json()
+    img_data = data["frame"].split(",")[1]
+    img_bytes = base64.b64decode(img_data)
+    np_arr = np.frombuffer(img_bytes, np.uint8)
+    frame = cv2.imdecode(np_arr, cv2.IMREAD_COLOR)
+    
+    if frame is None:
+        return jsonify(current_pred)
+    
+    frame = cv2.flip(frame, 1)
+    rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+    lm, annotated, num_hands = extractor.extract(rgb, frame.copy())
+    
+    if lm is not None:
+        landmark_buffer.append(lm)
+        if len(landmark_buffer) > 30:
+            landmark_buffer.pop(0)
+        if len(landmark_buffer) == 30:
+            word, conf = predictor.predict(np.array(landmark_buffer))
+            if conf > 0.70 and word:
+                added = sentence_b.add_word(word)
+                if added:
+                    session_words.append({
+                        "word": word,
+                        "confidence": round(conf*100,1),
+                        "timestamp": datetime.now().strftime("%H:%M:%S")
+                    })
+            current_pred = {
+                "word": word if conf > 0.70 else "",
+                "confidence": round(conf*100,1),
+                "sentence": sentence_b.get_sentence(),
+                "num_hands": num_hands,
+            }
+    
+    return jsonify(current_pred)
 
 @app.route("/api/camera/stop", methods=["POST"])
 @login_req
