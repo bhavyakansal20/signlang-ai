@@ -28,14 +28,15 @@ predictor  = GesturePredictor(model_path="model/signlang_model.pt",
 sentence_b = SentenceBuilder()
 
 # ── Global state ──────────────────────────────────────────────
-camera_lock    = threading.Lock()
-current_frame  = None
-current_pred   = {"word": "", "confidence": 0.0, "sentence": "", "num_hands": 0}
-camera_active  = False
-cap            = None
-session_words  = []
-session_start  = None
-landmark_buffer = []   # ✅ FIX 1 — declared here
+camera_lock  = threading.Lock()
+current_frame = None
+current_pred  = {"word": "", "confidence": 0.0, "sentence": "", "num_hands": 0}
+camera_active = False
+cap           = None
+session_words = []
+session_start = None
+# NOTE: landmark_buffer is now per-user via Flask session["lm_buffer"]
+# This fixes the multi-user interference bug where two users shared one buffer
 
 # ── Helpers ───────────────────────────────────────────────────
 def hash_pw(p): return hashlib.sha256(p.encode()).hexdigest()
@@ -128,22 +129,23 @@ def terms():
 
 # ── Camera API ────────────────────────────────────────────────
 
-@app.route("/api/camera/start", methods=["POST"])   # ✅ FIX 2 — was missing
+@app.route("/api/camera/start", methods=["POST"])
 @login_req
 def start_camera():
-    global session_words, session_start, landmark_buffer, current_pred
-    session_words   = []
-    session_start   = time.time()
-    landmark_buffer = []
-    current_pred    = {"word": "", "confidence": 0.0, "sentence": "", "num_hands": 0}
+    global session_words, session_start, current_pred
+    session_words        = []
+    session_start        = time.time()
+    session["lm_buffer"] = []   # ✅ per-user buffer cleared on start
+    current_pred         = {"word": "", "confidence": 0.0, "sentence": "", "num_hands": 0}
     sentence_b.reset()
     return jsonify({"status": "started"})
 
 @app.route("/api/frame", methods=["POST"])
 @login_req
 def process_frame():
-    global current_pred, session_words, landmark_buffer, extractor
+    global current_pred, session_words, extractor
 
+    # Lazy-load MediaPipe on first frame
     if extractor is None:
         extractor = LandmarkExtractor()
 
@@ -151,6 +153,7 @@ def process_frame():
     if not data or "frame" not in data:
         return jsonify(current_pred)
 
+    # Decode base64 JPEG frame sent from browser
     try:
         img_data  = data["frame"].split(",")[1]
         img_bytes = base64.b64decode(img_data)
@@ -164,70 +167,24 @@ def process_frame():
         print("[Frame] frame is None after decode")
         return jsonify(current_pred)
 
-    print(f"[Frame] shape={frame.shape} buffer={len(landmark_buffer)}")  # ← ADD THIS
-
+    # Extract landmarks (no cv2.flip — browser already mirrors front cam)
     rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
     lm, annotated, num_hands = extractor.extract(rgb, frame.copy())
 
-    print(f"[Frame] hands={num_hands} lm={lm is not None}")  # ← ADD THIS
+    print(f"[Frame] hands={num_hands} lm={lm is not None} buf={len(session.get('lm_buffer', []))}")
 
     if lm is not None:
-        landmark_buffer.append(lm)
-        if len(landmark_buffer) > 30:
-            landmark_buffer.pop(0)
+        # ✅ Per-user buffer stored in Flask session — no multi-user interference
+        user_buffer = session.get("lm_buffer", [])
+        user_buffer.append(lm.tolist())   # tolist() needed for JSON serialization
+        if len(user_buffer) > 30:
+            user_buffer.pop(0)
+        session["lm_buffer"] = user_buffer
 
-        if len(landmark_buffer) == 30:
-            word, conf = predictor.predict(np.array(landmark_buffer))
-            print(f"[Frame] prediction: word={word} conf={conf:.2f}")  # ← ADD THIS
-            if conf > 0.70 and word:
-                added = sentence_b.add_word(word)
-                if added:
-                    session_words.append({
-                        "word":       word,
-                        "confidence": round(conf * 100, 1),
-                        "timestamp":  datetime.now().strftime("%H:%M:%S")
-                    })
-                current_pred = {
-                    "word":       word,
-                    "confidence": round(conf * 100, 1),
-                    "sentence":   sentence_b.get_sentence(),
-                    "num_hands":  num_hands,
-                }
-            else:
-                current_pred = {
-                    "word":       "",
-                    "confidence": round(conf * 100, 1),
-                    "sentence":   sentence_b.get_sentence(),
-                    "num_hands":  num_hands,
-                }
+        if len(user_buffer) == 30:
+            word, conf = predictor.predict(np.array(user_buffer))
+            print(f"[Frame] prediction: word={word} conf={conf:.2f}")
 
-    return jsonify(current_pred)
-
-    # Decode base64 frame from browser
-    try:
-        img_data  = data["frame"].split(",")[1]
-        img_bytes = base64.b64decode(img_data)
-        np_arr    = np.frombuffer(img_bytes, np.uint8)
-        frame     = cv2.imdecode(np_arr, cv2.IMREAD_COLOR)
-    except Exception:
-        return jsonify(current_pred)
-
-    if frame is None:
-        return jsonify(current_pred)
-
-    # ✅ FIX 3 — removed cv2.flip (browser already mirrors front camera)
-    rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-    lm, annotated, num_hands = extractor.extract(rgb, frame.copy())
-
-    if lm is not None:
-        landmark_buffer.append(lm)
-        if len(landmark_buffer) > 30:
-            landmark_buffer.pop(0)
-
-        if len(landmark_buffer) == 30:
-            word, conf = predictor.predict(np.array(landmark_buffer))
-
-            # ✅ FIX 4 — always update current_pred even if below threshold
             if conf > 0.70 and word:
                 added = sentence_b.add_word(word)
                 if added:
@@ -255,9 +212,9 @@ def process_frame():
 @app.route("/api/camera/stop", methods=["POST"])
 @login_req
 def stop_camera():
-    global session_words, session_start, landmark_buffer
+    global session_words, session_start
     duration = int(time.time() - (session_start or time.time()))
-    landmark_buffer = []   # clear buffer on stop
+    session["lm_buffer"] = []   # clear per-user buffer on stop
 
     if session_words:
         sheets.add_session({
