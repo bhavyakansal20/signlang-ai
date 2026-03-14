@@ -25,7 +25,7 @@ pinned: false
 
 <br>
 
-[![Live Demo](https://img.shields.io/badge/🚀%20Live%20Demo-Visit%20Now-06d6a0?style=for-the-badge&labelColor=0d1117)](https://bit.ly/SignLang-AI)
+[![Live Demo](https://img.shields.io/badge/🚀%20Live%20Demo-Visit%20Now-06d6a0?style=for-the-badge&labelColor=07060A)](https://kansal0920-signlang-ai.hf.space/dashboard)
 [![GitHub Repo](https://img.shields.io/badge/⭐%20GitHub-Star%20Repo-F0820F?style=for-the-badge&labelColor=07060A)](https://github.com/BhavyaKansal20/SignLang-AI)
 
 <br>
@@ -633,6 +633,6 @@ Every star helps this project reach more people who need it. 🙏
   ╚══════════════════════════════════════════════════════╝
 ```
 
-[![Live Demo](https://img.shields.io/badge/🚀%20Live%20Demo-Visit%20Now-06d6a0?style=for-the-badge&labelColor=0d1117)](https://bit.ly/SignLang-AI)
+[![Live Demo](https://img.shields.io/badge/🚀%20Live%20Demo-Visit%20Now-06d6a0?style=for-the-badge&labelColor=0d1117)](https://kansal0920-signlang-ai.hf.space/dashboard)
 
 </div>
