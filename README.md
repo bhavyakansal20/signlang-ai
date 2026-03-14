@@ -1,3 +1,12 @@
+---
+title: SignLang AI
+emoji: 🤙
+colorFrom: orange
+colorTo: yellow
+sdk: docker
+pinned: false
+---
+
 <div align="center">
 
 <br>
